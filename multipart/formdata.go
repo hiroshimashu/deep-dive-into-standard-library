@@ -1,5 +1,48 @@
 package multipart
 
-import "errors"
+import (
+	"bytes"
+	"errors"
+	"io"
+	"net/textproto"
+)
 
 var ErrMessageTooLarge = errors.New("multipart: message too large")
+
+
+type FileHeader struct {
+	Filename string 
+	Header textproto.MIMEHeader
+	Size int64 
+
+	content []byte 
+	tmpfile string 
+}
+
+// Open :Read binary data and return File
+func (fh *FileHeader) Open() (File, error) {
+	if b := fh.content; b != nil {
+		r := io.NewSectionReader(bytes.NewReader(b), 0, int64(len(b)))
+		return sectionReadCloser{ r }, nil
+	}
+}
+
+
+type File interface {
+	io.Reader 
+	io.ReaderAt
+	io.Seeker 
+	io.Closer 
+}
+
+
+// Turn binary data to File
+type sectionReadCloser struct {
+	*io.SectionReader 
+}
+
+func  (rc sectionReadCloser) Close() error {
+	return nil
+}
+// TODO 
+// io packageもついでに覗いてみる
