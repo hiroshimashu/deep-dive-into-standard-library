@@ -5,7 +5,10 @@ import (
 	"errors"
 	"io"
 	"net/textproto"
+	"os"
 )
+
+// Q. FileHeader内のtmpFileの扱い
 
 var ErrMessageTooLarge = errors.New("multipart: message too large")
 
@@ -46,3 +49,24 @@ func  (rc sectionReadCloser) Close() error {
 }
 // TODO 
 // io packageもついでに覗いてみる
+
+type Form struct {
+	Value map[string][]string
+	File map[string][]*FileHeader
+}
+
+func (f *Form) RemoveAll() error {
+	var err error
+	for _, fhs := range f.File {
+		for _, fh := range fhs {
+			if fh.tmpfile != "" {
+				e := os.Remove(fh.tmpfile)
+				if e != nil && err == nil {
+					err = e 
+				}
+			}
+
+			}
+	}
+	return err 
+}
