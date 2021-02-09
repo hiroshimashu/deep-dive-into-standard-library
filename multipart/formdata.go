@@ -65,8 +65,7 @@ func (f *Form) RemoveAll() error {
 					err = e 
 				}
 			}
-
-			}
+		}
 	}
 	return err 
 }
