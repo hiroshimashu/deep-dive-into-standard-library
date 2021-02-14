@@ -1,9 +1,12 @@
 package multipart
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"net/textproto"
+	"sort"
 )
 
 type Writer struct {
@@ -61,5 +64,46 @@ func (w *Writer) Close() error {
 	}
 	_, err := fmt.Fprintf(w.w, "\r\n--%s--\r\n", w.boundary)
 	return err
+}
+
+func (w *Writer) CreateFormField(fieldname string) (io.Writer, error) {
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition", 
+		fmt.Sprintf(`form-data; name=%s`, escapeQuotes(fieldname)))
+	return w.CreatePart(h)
+}
+
+func (w *Writer) CreatePart(header textproto.MIMEHeader) (io.Writer, error) {
+	if w.lastpart != nil {
+		if err := w.lastpart.close(); err != nil {
+			return nil, err
+		}
+	}
+	var b bytes.Buffer 
+	if w.lastpart != nil {
+		fmt.Fprintf(&b, "\r\n--%s\r\n", w.boundary)
+	} else {
+		fmt.Fprintf(&b, "--%s\r\n", w.boundary)
+	}
+	keys := make([]string, 0, len(header))
+	for k := range header {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		for _, v := range header[k] {
+			fmt.Fprintf(&b, "%s: %s\r\n", k, v)
+		}
+	}
+	fmt.Fprintf(&b, "\r\n")
+	_, err := io.Copy(w.w, &b)
+	if err != nil {
+		return nil, err
+	}
+	p := &part {
+		mw: w,
+	}
+	w.lastpart = p
+	return p, nil 
 }
 
