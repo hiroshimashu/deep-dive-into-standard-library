@@ -121,3 +121,12 @@ func (w *Writer) CreateFormFile (filename, filename string) (io.Writer, error) {
 	return w.CreatePart(h)
 }
 
+func (w *Writer) FormDataContentType() string {
+	b := w.boundary
+
+	if strings.ContainsAny(b, `()<>@,;:\"/[]?= `){
+		b = `"` + b + `"`
+	}
+	return "multipart/form-data; boundary=" + b
+}
+
