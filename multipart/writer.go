@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/textproto"
 	"sort"
+	"strings"
 )
 
 type Writer struct {
@@ -105,5 +106,18 @@ func (w *Writer) CreatePart(header textproto.MIMEHeader) (io.Writer, error) {
 	}
 	w.lastpart = p
 	return p, nil 
+}
+
+var quoteEscape = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+func escapeQuotes(s string) string {
+	return quoteEscape.Replace(s)
+}
+
+func (w *Writer) CreateFormFile (filename, filename string) (io.Writer, error) {
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`,
+		escapeQuotes(fieldname), escapeQuotes(filename)))
+	h.Set("Content-Type", "application/octet-stream")
+	return w.CreatePart(h)
 }
 
