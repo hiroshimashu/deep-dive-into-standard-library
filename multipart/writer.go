@@ -130,3 +130,12 @@ func (w *Writer) FormDataContentType() string {
 	return "multipart/form-data; boundary=" + b
 }
 
+func (w *Writer) WriteField(fieldname, value string) error {
+	p, err := w.CreateFormField(fieldname)
+	if err != nil {
+		return err
+	}
+	_, err = p.Write([]byte(value))
+	return err 
+}
+
